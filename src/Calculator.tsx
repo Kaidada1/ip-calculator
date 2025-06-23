@@ -1,21 +1,40 @@
 import React from "react";
 import "./Calculator.css";
 import { Checkbox } from 'antd';
+import IconComponent from "./Icon";
+import { FaDivide, FaList } from 'react-icons/fa';
+import { TiCalculator } from 'react-icons/ti';
+
+type HistoryItem = {
+        expression: string;
+        result: string;
+        date: string;
+    }
 
 function App() {
     const [current, setCurrent] = React.useState<string>("0");
     const [previous, setPrevious] = React.useState<string>("");
     const [operator, setOperator] = React.useState<string|null>(null);
     const [overWrite, setOverWrite] = React.useState<boolean>(false);
-    const [history, setHistory] = React.useState<HistoryItem[]>([]);
+    const [history, setHistory] = React.useState<HistoryItem[]>(() => {
+        try {
+            const saved = localStorage.getItem("history");
+            if (saved) {
+                const parsed = JSON.parse(saved);
+                if (Array.isArray(parsed)) {
+                    return parsed;
+                } else {
+                    console.warn("", parsed);
+                }
+            }
+        } catch (e) {
+            console.error("", e);
+        }
+        return [];
+    });
     const [showHistory, setShowHistory] = React.useState<boolean>(false);
     const [showCheckboxes, setShowCheckboxes] = React.useState<boolean>(false);
     const [selectedItems, setSelectedItems] = React.useState<number[]>([]);
-
-    type HistoryItem = {
-        expression: string;
-        result: string;
-    }
 
     const clear = () => {
         setCurrent("0");
@@ -71,49 +90,57 @@ function App() {
     }
 
     const calculate = () => {
-        if (operator === "null" || previous === "null" ) return;
-        const a = parseFloat(previous);
-        const b = parseFloat(current);
+        if (!operator || previous === "" && operator !== "%") return;
+
         let result = 0;
+        let expression = "";
+
         switch (operator) {
             case "+":
-                result = a + b;
+                result = parseFloat(previous) + parseFloat(current);
+                expression = `${previous} + ${current}`;
                 break;
             case "-":
-                result = a - b;
+                result = parseFloat(previous) - parseFloat(current);
+                expression = `${previous} - ${current}`;
                 break;
             case "x":
-                result = a * b;
+                result = parseFloat(previous) * parseFloat(current);
+                expression = `${previous} x ${current}`;
                 break;
             case "/":
-                result = a / b;
+                result = parseFloat(previous) / parseFloat(current);
+                expression = `${previous} / ${current}`;
                 break;
             case "%":
-                result = a / 100;
+                result = parseFloat(current) / 100;
+                expression = `${current}%`;
                 break;
             default:
-                break;
-        }
+                return;
+            }
+
         setCurrent(result.toString());
-        setPrevious(`${previous} ${operator} ${current}`);
+        setPrevious("");
         setOperator(null);
         setOverWrite(true);
-        setHistory((prev) => [
-            ...prev,
+
+        setHistory(prev => [
+        ...prev,
             {
-                expression:`${previous} ${operator} ${current}`,
-                result: result.toString(),
+            expression,
+            result: result.toString(),
+            date: new Date().toISOString(),
             }
-        ]
-        );
-    }
+        ]);
+    };
 
     const buttons: [React.ReactNode, string, () => void] [] =[
         ["<=", "function", deleteHandle],
         ["AC", "function", clear],
         ["±", "function", changeSign],
         ["%", "function", () => chooseOperator("%")],
-        [/*<FaDivide/>*/"/", "operator", () => chooseOperator("/")],
+        [<IconComponent icon={FaDivide as React.ElementType}/>, "operator", () => chooseOperator("/")],
 
         ["7", "number", () => chooseNumber("7") ],
         ["8", "number", () => chooseNumber("8")],
@@ -130,24 +157,23 @@ function App() {
         ["3", "number", () => chooseNumber("3")],
         ["+", "operator", () => chooseOperator("+")],
 
-        [/*<TiCalculator size={50} />*/"?", "number", () => console.log("Calculator icon clicked")],
+        [<IconComponent icon={TiCalculator as React.ElementType}/>, "number", () => console.log("Calculator icon clicked")],
         ["0", "number", () => chooseNumber("0")],
         [".", "number", () => chooseNumber(".")],
         ["=", "operator", calculate]
     ]
 
     React.useEffect(() => {
-        const savedHistory = localStorage.getItem("history");
-        setHistory(savedHistory ? JSON.parse(savedHistory) : []);
-    }, []);
-
-    React.useEffect(() => {
-        localStorage.setItem("history", JSON.stringify(history));
+        try {
+            localStorage.setItem("history", JSON.stringify(history));
+        } catch (e) {
+            console.error("", e);
+        }
     }, [history]);
 
     return (
         <div className="calculator">
-            <div className="list" onClick={() => setShowHistory(true)}>!</div>
+            <div className="list" onClick={() => setShowHistory(true)}><IconComponent icon={FaList as React.ElementType} /></div>
             <div className="display">
                 <div className="previous">{operator ? `${previous} ${operator}`:previous}</div>
                 <div className="current">{current}</div>
@@ -177,16 +203,44 @@ function App() {
                     <button className="close-btn" onClick={() => {setShowHistory(false); setShowCheckboxes(false);}}>xong</button>
                 </div>
                 <div className="history-body">
-                    <div className="time">Hôm nay</div>
-                    {history.map((item, index) => (
-                        <div key={index}>
-                            <div className="history-item">
-                                {showCheckboxes && <Checkbox onChange={e => handleCheckboxChange(index, e.target.checked)} />}
-                                <div className="history-content">
-                                    <div className="expression">{item.expression}</div>
-                                    <div className="result">{item.result}</div>
-                                </div>
-                            </div>
+                    {Object.entries(history.reduce((acc, item) => {
+                        const dateObj = new Date(item.date);
+                        const today = new Date();
+                        const yesterday = new Date();
+                        yesterday.setDate(today.getDate() - 1);
+
+                        const isToday = dateObj.toDateString() === today.toDateString();
+                        const isYesterday = dateObj.toDateString() === yesterday.toDateString();
+
+                        let dateLabel = "";
+                        if (isToday) {
+                            dateLabel = "Hôm nay";
+                        } else if (isYesterday) {
+                            dateLabel = "Hôm qua";
+                        } else {
+                            dateLabel = dateObj.toLocaleDateString();
+                        }
+
+                        if (!acc[dateLabel]) {
+                            acc[dateLabel] = [];
+                        }
+                        acc[dateLabel].push(item);
+                        return acc;
+                    }, {} as Record<string, HistoryItem[]>)).map(([date, items]) => (
+                        <div key={date}>
+                            <div className="time">{date}</div>
+                            {items.map((item, index) => {
+                                const globalIndex = history.findIndex(h => h === item);
+                                return (
+                                    <div key={globalIndex} className="history-item">
+                                        {showCheckboxes && <Checkbox onChange={e => handleCheckboxChange(globalIndex, e.target.checked)} />}
+                                        <div className="history-content">
+                                            <div className="expression">{item.expression}</div>
+                                            <div className="result">{item.result}</div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
                         </div>
                     ))}
                 </div>

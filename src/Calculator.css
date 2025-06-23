@@ -1,8 +1,11 @@
 body {
-    background-color: black;
+    background-color: #333;
     display: flex;
     justify-content: center;
     align-items: center;
+    height: 100vh;
+    margin: 0;
+    font-family: 'SF Pro Display', 'Helvetica Neue', sans-serif;
 }
 
 .calculator {
@@ -12,6 +15,7 @@ body {
     width: 320px;
     border-radius: 20px;
     overflow: hidden;
+    box-shadow: #565656;
 }
 
 .display {
@@ -88,8 +92,6 @@ body {
     padding: 10px;
     display: flex;
     flex-direction: column;
-    /* Remove default animation */
-    /* animation: moveUp 0.09s; */
     transform: translateY(100%);
     transition: transform 0.5s  ease-in-out;
 }
@@ -100,16 +102,6 @@ body {
 
 .history-panel.hide {
     transform: translateY(100%);
-}
-
-@keyframes moveUp{
-    from{height: 0;}
-    to{height: max-content;}
-}
-
-@keyframes moveDown{
-    from{height: max-content;}
-    to{height: 0px;}
 }
 
 .history-header {
@@ -131,6 +123,7 @@ body {
     display: flex;
     gap: 10px;
     margin-top: 10px;
+    margin-bottom: 10px;
 }
 
 .expression,
@@ -178,6 +171,6 @@ body {
 }
 
 .time{
-    margin-bottom: 5px;
+    margin-bottom: 10px;
     border: #555;
 }
