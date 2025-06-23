@@ -16,6 +16,7 @@ function App() {
     const [previous, setPrevious] = React.useState<string>("");
     const [operator, setOperator] = React.useState<string|null>(null);
     const [overWrite, setOverWrite] = React.useState<boolean>(false);
+    const [expression, setExpression] = React.useState<string>("");
     const [history, setHistory] = React.useState<HistoryItem[]>(() => {
         try {
             const saved = localStorage.getItem("history");
@@ -41,6 +42,7 @@ function App() {
         setPrevious("");
         setOperator(null);
         setOverWrite(false);    
+        setExpression("");
     };
 
     const changeSign = () => {
@@ -90,7 +92,7 @@ function App() {
     }
 
     const calculate = () => {
-        if (!operator || previous === "" && operator !== "%") return;
+        if ((!operator || previous === "") && operator !== "%") return;
 
         let result = 0;
         let expression = "";
@@ -124,7 +126,7 @@ function App() {
         setPrevious("");
         setOperator(null);
         setOverWrite(true);
-
+        setExpression(expression)
         setHistory(prev => [
         ...prev,
             {
@@ -175,7 +177,7 @@ function App() {
         <div className="calculator">
             <div className="list" onClick={() => setShowHistory(true)}><IconComponent icon={FaList as React.ElementType} /></div>
             <div className="display">
-                <div className="previous">{operator ? `${previous} ${operator}`:previous}</div>
+                <div className="previous">{expression || (operator ? `${previous} ${operator}` : previous)}</div>
                 <div className="current">{current}</div>
             </div>
             <div className="button-grid">
@@ -234,7 +236,9 @@ function App() {
                                 return (
                                     <div key={globalIndex} className="history-item">
                                         {showCheckboxes && <Checkbox onChange={e => handleCheckboxChange(globalIndex, e.target.checked)} />}
-                                        <div className="history-content">
+                                        <div className="history-content" onClick={()=>{
+                                            
+                                        }}>
                                             <div className="expression">{item.expression}</div>
                                             <div className="result">{item.result}</div>
                                         </div>
